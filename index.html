@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TAPE REFLEX — Modern Lofi Loop Machine</title>
+<style>
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: local('JetBrains Mono');
+  }
+
+  :root {
+    --bg-black: #000000;
+    --panel-dark: #0d0d11;
+    --panel-darker: #050507;
+    --neon-purple: #9b5de5;
+    --neon-purple-dim: #7209b7;
+    --neon-magenta: #b5179e;
+    --pure-white: #ffffff;
+    --muted-white: #aaaaaa;
+    --dim-white: rgba(255, 255, 255, 0.08);
+    --dim-white-strong: rgba(255, 255, 255, 0.2);
+    --line: rgba(255, 255, 255, 0.1);
+    --line-strong: rgba(255, 255, 255, 0.25);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-black);
+    color: var(--pure-white);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    overscroll-behavior: none;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* Sternenhintergrund generieren */
+  body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.65;
+    background-image: 
+      radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 75px 130px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 150px 60px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 220px 200px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 280px 120px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 350px 350px, #fff, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 450px 80px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 520px 240px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 600px 180px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 680px 420px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 110px 480px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 290px 520px, #fff, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 490px 460px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 620px 580px, #fff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 700px 700px;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 24px 18px;
+  }
+
+  .unit {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel-dark);
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---------- HEADER / DECK ---------- */
+  .deck {
+    background: var(--panel-darker);
+    padding: 24px 24px 28px;
+    position: relative;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+
+  .brand-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    font-size: 26px;
+    color: var(--pure-white);
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .brand-sub {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--neon-purple);
+    text-transform: uppercase;
+    margin-top: 8px;
+    font-weight: bold;
+  }
+
+  .badge {
+    font-size: 8px;
+    color: var(--muted-white);
+    text-align: right;
+    letter-spacing: 0.1em;
+    line-height: 1.6;
+  }
+
+  /* Reels */
+  .reels {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    padding: 8px 0;
+  }
+
+  .reel-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .reel {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--bg-black);
+    border: 1px solid var(--line-strong);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s linear;
+  }
+
+  .reel svg { width: 100%; height: 100%; }
+
+  .reel.spinning {
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .tape-thread {
+    width: 120px;
+    height: 1px;
+    background: var(--line-strong);
+    margin: 0 -20px;
+    position: relative;
+    top: -2px;
+  }
+
+  .reel-label {
+    font-size: 8px;
+    color: var(--muted-white);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .vu-row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 20px;
+    height: 12px;
+  }
+
+  .vu-bar {
+    width: 4px;
+    height: 4px;
+    background: var(--dim-white);
+    border-radius: 0px;
+    align-self: flex-end;
+    transition: height 0.08s ease, background 0.08s ease;
+  }
+
+  .vu-bar.lit { background: var(--neon-purple-dim); }
+  .vu-bar.lit.peak { background: var(--neon-purple); }
+
+  /* ---------- BODY ---------- */
+  .body {
+    padding: 24px;
+  }
+
+  .section {
+    margin-bottom: 26px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pure-white);
+    font-weight: 700;
+  }
+
+  .section-hint {
+    font-size: 9px;
+    color: var(--muted-white);
+    letter-spacing: 0.02em;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    border: 1px dashed var(--line-strong);
+    border-radius: 8px;
+    padding: 26px 16px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--panel-darker);
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+
+  .dropzone:active { background: var(--dim-white); }
+
+  .dropzone.has-file {
+    border-style: solid;
+    border-color: var(--neon-purple);
+    background: rgba(155, 93, 229, 0.05);
+  }
+
+  .dropzone.drag-over {
+    border-color: var(--neon-magenta);
+    background: rgba(181, 23, 158, 0.05);
+  }
+
+  .dz-icon {
+    font-size: 20px;
+    margin-bottom: 6px;
+    color: var(--neon-purple);
+  }
+
+  .dz-text {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .dz-sub {
+    font-size: 9.5px;
+    color: var(--muted-white);
+    margin-top: 4px;
+  }
+
+  input[type="file"] { display: none; }
+
+  .original-play-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--pure-white);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .original-play-btn:active { background: var(--dim-white); }
+
+  .original-play-btn.playing {
+    background: var(--neon-purple-dim);
+    border-color: var(--neon-purple-dim);
+  }
+
+  .waveform {
+    margin-top: 10px;
+    height: 44px;
+    border-radius: 6px;
+    background: var(--bg-black);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    display: none;
+  }
+  .waveform.visible { display: block; }
+  .waveform canvas { width: 100%; height: 100%; display: block; }
+
+  /* BPM control */
+  .bpm-panel {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--panel-darker);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+
+  .bpm-readout {
+    font-size: 26px;
+    font-weight: 700;
+    min-width: 72px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bpm-readout span {
+    font-size: 9px;
+    display: block;
+    letter-spacing: 0.1em;
+    color: var(--muted-white);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .bpm-controls { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--line-strong);
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 0%;
+    background: var(--neon-purple);
+    border: 1px solid var(--pure-white);
+    cursor: pointer;
+  }
+
+  .bpm-tap {
+    align-self: flex-start;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--neon-purple);
+    background: none;
+    border: none;
+    padding: 2px 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .export-bpm-panel { margin-top: 8px; }
+  .export-bpm-panel .bpm-readout { color: var(--neon-magenta); }
+  .pitch-panel { margin-top: 8px; }
+  .pitch-panel .bpm-readout { color: var(--neon-purple); }
+  .export-bpm-hint {
+    font-size: 9px;
+    color: var(--muted-white);
+    letter-spacing: 0.03em;
+  }
+
+  /* Pedal chain */
+  .chain {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pedal {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-darker);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0;
+    opacity: 0.5;
+    overflow: hidden;
+    transition: opacity 0.15s ease, border-color 0.15s ease;
+  }
+
+  .pedal.selected {
+    opacity: 1;
+    border-color: var(--neon-purple);
+  }
+
+  .pedal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .pedal-led {
+    width: 6px;
+    height: 6px;
+    border-radius: 0%;
+    background: var(--line-strong);
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .pedal.selected .pedal-led {
+    background: var(--neon-purple);
+  }
+
+  .pedal-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    min-width: 92px;
+    text-transform: uppercase;
+  }
+
+  .pedal-meter {
+    flex: 1;
+    height: 2px;
+    background: var(--line);
+    overflow: hidden;
+  }
+
+  .pedal-meter-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--neon-purple);
+    transition: width 0.3s ease;
+  }
+
+  .pedal-val {
+    font-size: 9px;
+    min-width: 50px;
+    text-align: right;
+    color: var(--muted-white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pedal-panel {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.25s ease;
+    padding: 0 12px;
+  }
+
+  .pedal.selected .pedal-panel {
+    max-height: 52px;
+    opacity: 1;
+    padding: 0 12px 12px;
+  }
+
+  .intensity-switch {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .intensity-opt {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 4px;
+    border-radius: 4px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--pure-white);
+    font-family: inherit;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s, border-color 0.1s;
+  }
+
+  .intensity-opt.active {
+    background: var(--neon-purple);
+    border-color: var(--neon-purple);
+  }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 8px;
+    border: none;
+    background: var(--neon-purple);
+    color: var(--pure-white);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.1s;
+    margin-top: 10px;
+  }
+
+  .generate-btn:hover:not(:disabled) {
+    background: var(--neon-purple-dim);
+  }
+
+  .generate-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .generate-btn .sub {
+    display: block;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+    font-weight: 500;
+    margin-top: 4px;
+    text-transform: none;
+  }
+
+  /* Transport */
+  .transport {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .transport button {
+    flex: 1;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--pure-white);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .transport button:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .transport button.primary {
+    background: var(--pure-white);
+    color: var(--bg-black);
+    border-color: var(--pure-white);
+  }
+
+  .transport button.export {
+    background: rgba(181, 23, 158, 0.2);
+    border-color: var(--neon-magenta);
+    color: var(--pure-white);
+  }
+
+  .transport button:active:not(:disabled) { opacity: 0.8; }
+
+  .status-line {
+    text-align: center;
+    font-size: 9px;
+    color: var(--muted-white);
+    letter-spacing: 0.08em;
+    margin-top: 16px;
+    text-transform: uppercase;
+    min-height: 12px;
+  }
+
+  .footer-strip {
+    padding: 16px 24px 8px;
+    text-align: center;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    color: var(--muted-white);
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  /* Export "bitte warten" popup */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-box {
+    background: var(--panel-dark);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 28px 36px;
+    text-align: center;
+    min-width: 200px;
+  }
+  .modal-spinner {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--dim-white);
+    border-top-color: var(--neon-purple);
+    margin: 0 auto 14px;
+    animation: modalspin 0.6s linear infinite;
+  }
+  @keyframes modalspin { to { transform: rotate(360deg); } }
+  .modal-text {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--pure-white);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reel.spinning { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="unit">
+
+  <div class="deck">
+    <div class="brand-row">
+      <div>
+        <div class="brand-title">Tape Reflex</div>
+        <div class="brand-sub">Modern Lofi Loop Machine</div>
+      </div>
+      <div class="badge">MODELL TR-1<br>REFLEXKETTE</div>
+    </div>
+
+    <div class="reels">
+      <div class="reel-wrap">
+        <div class="reel" id="reelLeft">
+          <svg viewBox="0 0 68 68"><g stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><line x1="34" y1="8" x2="34" y2="20"/><line x1="34" y1="48" x2="34" y2="60"/><line x1="8" y1="34" x2="20" y2="34"/><line x1="48" y1="34" x2="60" y2="34"/></g></svg>
+        </div>
+        <div class="reel-label">Input</div>
+      </div>
+      <div class="tape-thread"></div>
+      <div class="reel-wrap">
+        <div class="reel" id="reelRight">
+          <svg viewBox="0 0 68 68"><g stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><line x1="34" y1="8" x2="34" y2="20"/><line x1="34" y1="48" x2="34" y2="60"/><line x1="8" y1="34" x2="20" y2="34"/><line x1="48" y1="34" x2="60" y2="34"/></g></svg>
+        </div>
+        <div class="reel-label">Output</div>
+      </div>
+    </div>
+
+    <div class="vu-row" id="vuRow"></div>
+    <div class="status-line" id="statusLine">Bereit — Loop laden</div>
+  </div>
+
+  <div class="body">
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">01 · Loop</span>
+        <span class="section-hint" id="fileHint">kein Loop geladen</span>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">＋</div>
+        <div class="dz-text">Loop antippen zum Laden</div>
+        <div class="dz-sub">WAV, MP3, M4A</div>
+        <input type="file" id="fileInput" accept="audio/*">
+      </div>
+      <div class="waveform" id="waveformWrap"><canvas id="waveformCanvas"></canvas></div>
+      <button class="original-play-btn" id="originalPlayBtn" style="display:none;">▶ Original abspielen</button>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">02 · Tempo</span>
+        <span class="section-hint">für Delay-Sync, Export &amp; Pitch</span>
+      </div>
+      <div class="bpm-panel">
+        <div class="bpm-readout" id="bpmReadout">92<span>BPM</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="bpmSlider" min="60" max="180" value="92" step="1">
+          <button class="bpm-tap" id="tapTempo">Tap Tempo</button>
+        </div>
+      </div>
+      <div class="bpm-panel export-bpm-panel">
+        <div class="bpm-readout" id="exportBpmReadout">92<span>EXPORT</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="exportBpmSlider" min="60" max="180" value="92" step="1">
+          <span class="export-bpm-hint" id="exportBpmHint">gleich wie Original</span>
+        </div>
+      </div>
+      <div class="bpm-panel pitch-panel">
+        <div class="bpm-readout" id="pitchReadout">0<span>PITCH</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
+          <span class="export-bpm-hint" id="pitchHint">dunkler ← Mitte → höher</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">03 · Effekte</span>
+        <span class="section-hint" id="chainHint">antippen zum Auswählen + Stärke wählen</span>
+      </div>
+      <div class="chain" id="chain"></div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" disabled>
+      Generate
+      <span class="sub">würfelt Ausprägung deiner Effekte</span>
+    </button>
+
+    <div class="transport">
+      <button class="primary" id="playBtn" disabled>▶ Abspielen</button>
+      <button class="export" id="exportBtn" disabled>⇩ WAV Export</button>
+    </div>
+  </div>
+
+  <div class="footer-strip">Alles läuft lokal im Browser · nichts wird hochgeladen</div>
+</div>
+
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-box">
+    <div class="modal-spinner" id="modalSpinner"></div>
+    <div class="modal-text" id="modalText">Bitte warten …</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ---------- State ----------
+  let audioCtx = null;
+  let originalBuffer = null;
+  let processedBuffer = null;
+  let sourceNode = null;
+  let originalSourceNode = null;
+  let isPlaying = false;
+  let isPlayingOriginal = false;
+  let currentBpm = 92;
+  let exportBpm = 92;
+  let exportBpmTouched = false;
+  let pitchSemitones = 0;
+  let tapTimes = [];
+  const INTENSITY_RANGES = {
+    low:  { min: 8,  max: 32 },
+    mid:  { min: 30, max: 65 },
+    high: { min: 60, max: 100 }
+  };
+  const WOW_LOW_RANGE = { min: 3, max: 15 };
+  const pedalIntensity = {}; 
+
+  const PEDAL_DEFS = [
+    { key: 'filter',   name: 'Filter',      unit: '',   min: 0, max: 100 },
+    { key: 'drive',    name: 'Drive',       unit: '',   min: 0, max: 100 },
+    { key: 'tapesat',  name: 'Tape Sat',    unit: '',   min: 0, max: 100 },
+    { key: 'bitcrush', name: 'Bitcrush',    unit: '',   min: 0, max: 100 },
+    { key: 'wowflutter', name: 'Wow/Flutter', unit: '', min: 0, max: 100 },
+    { key: 'vinyl',    name: 'Vinyl Noise', unit: '',   min: 0, max: 100 },
+    { key: 'chorus',   name: 'Chorus',      unit: '',   min: 0, max: 100 },
+    { key: 'phaser',   name: 'Phaser',      unit: '',   min: 0, max: 100 },
+    { key: 'tremolo',  name: 'Tremolo',     unit: '',   min: 0, max: 100 },
+    { key: 'widener',  name: 'Stereo Wide', unit: '',   min: 0, max: 100 },
+    { key: 'sidechain', name: 'Sidechain',  unit: '',   min: 0, max: 100 },
+    { key: 'delay',    name: 'Delay',       unit: '',   min: 0, max: 100 },
+    { key: 'reverb',   name: 'Reverb',      unit: '',   min: 0, max: 100 },
+    { key: 'chaos',    name: 'BPM Delay + Reverse', unit: '',  min: 0, max: 100 }
+  ];
+
+  let currentChain = {}; 
+  const selectedEffects = new Set(['filter', 'drive', 'wowflutter', 'vinyl']); 
+  PEDAL_DEFS.forEach(def => { pedalI
