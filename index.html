@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TAPE REFLEX — Modern Lofi Loop Machine</title>
+<style>
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: local('JetBrains Mono');
+  }
+
+  :root {
+    --bg-dark: #000000;
+    --card-bg: rgba(255, 255, 255, 0.03);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text-main: #FFFFFF;
+    --text-muted: rgba(255, 255, 255, 0.4);
+    --accent-glow: #9b5de5; 
+    --accent-purple-deep: #7209b7;
+    --accent-magenta: #b5179e;
+    --shadow-blur: 0 20px 50px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    overflow-y: auto; /* Vertikales Scrollen explizit erlaubt */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Verhindert das Feststecken bei langem Inhalt */
+    padding: 40px 20px;
+    position: relative;
+  }
+
+  /* Weiche, fließende Hintergrund-Blobs im lila Farbschema */
+  .bg-glow-1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(155, 93, 229, 0.12) 0%, transparent 70%);
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-glow-2 {
+    position: absolute;
+    bottom: 5%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(181, 23, 158, 0.08) 0%, transparent 70%);
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .unit {
+    width: 100%;
+    max-width: 580px;
+    background: rgba(13, 13, 17, 0.75);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 28px;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-blur);
+    padding: 32px;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 60px; /* Großzügiger Abstand nach unten für entspanntes Scrollen */
+  }
+
+  /* ---------- HEADER ---------- */
+  .brand-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
+  .brand-title {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #FFFFFF 0%, rgba(255,255,255,0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: var(--accent-glow);
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--card-border);
+    padding: 6px 12px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+  }
+
+  /* VU & Status */
+  .status-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .status-line {
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+  }
+
+  .vu-row {
+    display: flex;
+    gap: 3px;
+    height: 6px;
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border-radius: 99px;
+    overflow: hidden;
+    padding: 0 2px;
+    align-items: center;
+  }
+
+  .vu-bar {
+    flex: 1;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    transition: background 0.1s ease, height 0.1s ease;
+  }
+  .vu-bar.lit { background: var(--accent-glow); height: 4px; }
+  .vu-bar.lit.peak { background: var(--accent-magenta); }
+
+  /* ---------- SECTIONS ---------- */
+  .section {
+    margin-bottom: 32px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .section-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .dropzone {
+    border: 1px dashed var(--card-border);
+    border-radius: 18px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255,255,255,0.01);
+    transition: all 0.2s ease;
+  }
+
+  .dropzone:hover {
+    background: rgba(255,255,255,0.02);
+    border-color: rgba(155, 93, 229, 0.3);
+  }
+
+  .dropzone.has-file {
+    border-style: solid;
+    border-color: rgba(155, 93, 229, 0.4);
+    background: rgba(155, 93, 229, 0.03);
+  }
+
+  .dz-icon { font-size: 20px; margin-bottom: 8px; color: var(--text-muted); }
+  .dz-text { font-size: 14px; font-weight: 500; }
+  .dz-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  input[type="file"] { display: none; }
+
+  .original-play-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .original-play-btn:hover { background: rgba(255,255,255,0.04); }
+  .original-play-btn.playing { background: rgba(181, 23, 158, 0.2); border-color: rgba(181, 23, 158, 0.4); }
+
+  .waveform {
+    margin-top: 12px;
+    height: 60px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--card-border);
+    overflow: hidden;
+    display: none;
+  }
+  .waveform.visible { display: block; }
+  .waveform canvas { width: 100%; height: 100%; display: block; }
+
+  /* Panels & Sliders */
+  .bpm-panel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+  }
+
+  .bpm-readout {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 500;
+    min-width: 80px;
+  }
+
+  .bpm-readout span {
+    font-size: 9px;
+    display: block;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .bpm-controls { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 0 10px rgba(155, 93, 229, 0.4);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  .bpm-tap {
+    align-self: flex-start;
+    font-size: 11px;
+    color: var(--accent-glow);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .export-bpm-panel .bpm-readout { color: var(--accent-magenta); }
+  .pitch-panel .bpm-readout { color: var(--accent-glow); }
+  .export-bpm-hint { font-size: 11px; color: var(--text-muted); }
+
+  /* Effects List */
+  .chain { display: flex; flex-direction: column; gap: 8px; }
+
+  .pedal {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+
+  .pedal.selected {
+    border-color: rgba(155, 93, 229, 0.4);
+    background: rgba(155, 93, 229, 0.02);
+  }
+
+  .pedal-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    cursor: pointer;
+  }
+
+  .pedal-led {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: all 0.2s;
+  }
+  .pedal.selected .pedal-led {
+    background: var(--accent-glow);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  .pedal-name { font-size: 14px; font-weight: 500; flex: 1; }
+  
+  .pedal-meter { width: 80px; height: 3px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; }
+  .pedal-meter-fill { height: 100%; width: 0%; background: var(--accent-glow); transition: width 0.3s ease; }
+
+  .pedal-val { font-size: 12px; color: var(--text-muted); min-width: 50px; text-align: right; }
+
+  .pedal-panel {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    padding: 0 20px;
+  }
+  .pedal.selected .pedal-panel { max-height: 60px; opacity: 1; padding-bottom: 16px; }
+
+  .intensity-switch { display: flex; gap: 6px; }
+  .intensity-opt {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: rgba(255,255,255,0.01);
+    color: var(--text-main);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .intensity-opt.active {
+    background: #FFFFFF;
+    color: #000000;
+    border-color: #FFFFFF;
+    font-weight: 600;
+  }
+
+  /* Action Buttons */
+  .generate-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 18px;
+    border: none;
+    background: #FFFFFF;
+    color: #000000;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+  .generate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(255,255,255,0.05); }
+  .generate-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .generate-btn .sub { display: block; font-size: 10px; color: rgba(0,0,0,0.5); font-weight: 400; margin-top: 2px; }
+
+  .transport { display: flex; gap: 12px; margin-top: 12px; }
+  .transport button {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .transport button:hover:not(:disabled) { background: rgba(255,255,255,0.05); }
+  .transport button:disabled { opacity: 0.2; cursor: not-allowed; }
+  .transport button.primary { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+  .transport button.export { color: #FFFFFF; background: rgba(181, 23, 158, 0.15); border-color: rgba(181, 23, 158, 0.25); }
+  .transport button.export:hover:not(:disabled) { background: rgba(181, 23, 158, 0.25); }
+
+  .footer-strip { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 24px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-box {
+    background: #0d0d11;
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 32px;
+    text-align: center;
+    min-width: 240px;
+  }
+  .modal-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent-glow);
+    margin: 0 auto 16px;
+    animation: modalspin 0.6s linear infinite;
+  }
+  @keyframes modalspin { to { transform: rotate(360deg); } }
+  .modal-text { font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="bg-glow-1"></div>
+<div class="bg-glow-2"></div>
+
+<div class="unit">
+
+  <div class="brand-row">
+    <div>
+      <div class="brand-title">Tape Reflex</div>
+      <div class="brand-sub">Modern Lofi Loop Machine</div>
+    </div>
+    <div class="badge">REFLEX-1</div>
+  </div>
+
+  <div class="status-container">
+    <div class="status-line" id="statusLine">Bereit — Loop laden</div>
+    <div class="vu-row" id="vuRow"></div>
+  </div>
+
+  <div class="body">
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">01 · Loop</span>
+        <span class="section-hint" id="fileHint">Keine Datei ausgewählt</span>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">＋</div>
+        <div class="dz-text">Audio-Loop laden</div>
+        <div class="dz-sub">WAV, MP3, M4A</div>
+        <input type="file" id="fileInput" accept="audio/*">
+      </div>
+      <div class="waveform" id="waveformWrap"><canvas id="waveformCanvas"></canvas></div>
+      <button class="original-play-btn" id="originalPlayBtn" style="display:none;">▶ Original anhören</button>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">02 · Tempo &amp; Pitch</span>
+      </div>
+      
+      <div class="bpm-panel">
+        <div class="bpm-readout" id="bpmReadout">92<span>BPM</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="bpmSlider" min="60" max="180" value="92" step="1">
+          <button class="bpm-tap" id="tapTempo">Tap Tempo</button>
+        </div>
+      </div>
+      
+      <div class="bpm-panel export-bpm-panel">
+        <div class="bpm-readout" id="exportBpmReadout">92<span>EXPORT</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="exportBpmSlider" min="60" max="180" value="92" step="1">
+          <span class="export-bpm-hint" id="exportBpmHint">Entspricht Original</span>
+        </div>
+      </div>
+      
+      <div class="bpm-panel pitch-panel">
+        <div class="bpm-readout" id="pitchReadout">0<span>PITCH</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
+          <span class="export-bpm-hint" id="pitchHint">Pitch shifting (Halbtöne)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">03 · Effekte</span>
+        <span class="section-hint" id="chainHint">Wähle deine Texturen</span>
+      </div>
+      <div class="chain" id="chain"></div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" disabled>
+      Effekt-Kette generieren
+      <span class="sub">Würfelt Intensitäten basierend auf deiner Auswahl</span>
+    </button>
+
+    <div class="transport">
+      <button class="primary" id="playBtn" disabled>▶ Loop abspielen</button>
+      <button class="export" id="exportBtn" disabled>⇩ WAV Export</button>
+    </div>
+  </div>
+
+  <div class="footer-strip">Lokale Browser-Verarbeitung · Keine Server-Uploads</div>
+</div>
+
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-box">
+    <div class="modal-spinner" id="modalSpinner"></div>
+    <div class="modal-text" id="modalText">Processing Loop...</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ---------- State ----------
+  let audioCtx = null;
+  let originalBuffer = null;
+  let processedBuffer = null;
+  let sourceNode = null;
+  let originalSourceNode = null;
+  let isPlaying = false;
+  let isPlayingOriginal = false;
+  let currentBpm = 92;
+  let exportBpm = 92;
+  let exportBpmTouched = false;
+  let pitchSemitones = 0;
+  let tapTimes = [];
+  const INTENSITY_RANGES = {
+    low:  { min: 8,  max: 32 },
+    mid:  { min: 30, max: 65 },
+    high: { min: 60, max: 100 }
+  };
+  const WOW_LOW_RANGE = { min: 3, max: 15 };
+  const pedalIntensity = {}; 
+
+  const PEDAL_DEFS = [
+    { key: 'filter',   name: 'Filter',      unit: '',   min: 0, max: 100 },
+    { key: 'drive',    name: 'Drive',       unit: '',   min: 0, max: 100 },
+    { key: 'tapesat',  name: 'Tape Sat',    unit: '',   min: 0, max: 100 },
+    { key: 'bitcrush', name: 'Bitcrush',    unit: '',   min: 0, max: 100 },
+    { key: 'wowflutter', name: 'Wow / Flutter', unit: '', min: 0, max: 100 },
+    { key: 'vinyl',    name: 'Vinyl Crackle', unit: '', min: 0, max: 100 },
+    { key: 'chorus',   name: 'Chorus',      unit: '',   min: 0, max: 100 },
+    { key: 'phaser',   name: 'Phaser',      unit: '',   min: 0, max: 100 },
+    { key: 'tremolo',  name: 'Tremolo',     unit: '',   min: 0, max: 100 },
+    { key: 'widener',  name: 'Stereo Wide', unit: '',   min: 0, max: 100 },
+    { key: 'sidechain', name: 'Sidechain',  unit: '',   min: 0, max: 100 },
+    { key: 'delay',    name: 'Delay',       unit: '',   min: 0, max: 100 },
+    { key: 'reverb',   name: 'Reverb',      unit: '',   min: 0, max: 100 },
+    { key: 'chaos',    name: 'BPM Delay + Reverse', unit: '',  min: 0, max: 100 }
+  ];
+
+  let currentChain = {}; 
+  const selectedEffects = new Set(['filter', 'drive', 'wowflutter', 'vinyl']); 
+  PEDAL_DEFS.forEach(def => { pedalIntensity[def.key] = 'mid'; });
+
+  // ---------- DOM refs ----------
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileHint = document.getElementById('fileHint');
+  const waveformWrap = document.getElementById('waveformWrap');
+  const waveformCanvas = document.getElementById('waveformCanvas');
+  const originalPlayBtn = document.getElementById('originalPlayBtn');
+  const bpmSlider = document.getElementById('bpmSlider');
+  const bpmReadout = document.getElementById('bpmReadout');
+  const tapTempoBtn = document.getElementById('tapTempo');
+  const exportBpmSlider = document.getElementById('exportBpmSlider');
+  const exportBpmReadout = document.getElementById('exportBpmReadout');
+  const exportBpmHint = document.getElementById('exportBpmHint');
+  const pitchSlider = document.getElementById('pitchSlider');
+  const pitchReadout = document.getElementById('pitchReadout');
+  const exportModal = document.getElementById('exportModal');
+  const modalText = document.getElementById('modalText');
+  const chainEl = document.getElementById('chain');
+  const chainHint = document.getElementById('chainHint');
+  const generateBtn = document.getElementById('generateBtn');
+  const playBtn = document.getElementById('playBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const statusLine = document.getElementById('statusLine');
+  const vuRow = document.getElementById('vuRow');
+
+  // build VU bars
+  const VU_COUNT = 32;
+  for (let i = 0; i < VU_COUNT; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'vu-bar';
+    vuRow.appendChild(bar);
+  }
+  const vuBars = Array.from(vuRow.children);
+
+  // build rows
+  PEDAL_DEFS.forEach(def => {
+    const row = document.createElement('div');
+    row.className = 'pedal';
+    row.id = 'pedal-' + def.key;
+    row.innerHTML = `
+      <div class="pedal-header" id="header-${def.key}">
+        <div class="pedal-led"></div>
+        <div class="pedal-name">${def.name}</div>
+        <div class="pedal-meter"><div class="pedal-meter-fill" id="fill-${def.key}"></div></div>
+        <div class="pedal-val" id="val-${def.key}">aus</div>
+      </div>
+      <div class="pedal-panel">
+        <div class="intensity-switch" data-key="${def.key}">
+          <button class="intensity-opt" data-level="low">Niedrig</button>
+          <button class="intensity-opt active" data-level="mid">Mittel</button>
+          <button class="intensity-opt" data-level="high">Stark</button>
+        </div>
+      </div>
+    `;
+    row.querySelector('.pedal-header').addEventListener('click', () => {
+      if (selectedEffects.has(def.key)) {
+        selectedEffects.delete(def.key);
+      } else {
+        selectedEffects.add(def.key);
+      }
+      updatePedalSelectionDisplay();
+    });
+    row.querySelector('.intensity-switch').addEventListener('click', (e) => {
+      e.stopPropagation(); 
+      const btn = e.target.closest('.intensity-opt');
+      if (!btn) return;
+      pedalIntensity[def.key] = btn.dataset.level;
+      const switchEl = row.querySelector('.intensity-switch');
+      Array.from(switchEl.children).forEach(c => c.classList.toggle('active', c === btn));
+    });
+    chainEl.appendChild(row);
+  });
