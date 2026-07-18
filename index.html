@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tape Reflex — Lofi Loop Machine</title>
+<style>
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: local('JetBrains Mono');
+  }
+
+  :root {
+    --panel: #0B0A10;
+    --panel-2: #100E17;
+    --housing-black: #050408;
+    --housing-black-2: #09070D;
+    --violet: #A855F7;
+    --violet-dim: #6D28D9;
+    --violet-soft: #C084FC;
+    --off-white: #F4F1FA;
+    --ink: #E9E5F5;
+    --ink-dim: rgba(233,229,245,0.6);
+    --line: rgba(233,229,245,0.10);
+    --line-strong: rgba(233,229,245,0.22);
+    --shadow-soft: 0 8px 28px rgba(0,0,0,0.55);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    color: var(--ink);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    overscroll-behavior: none;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 18px;
+    background-color: #000;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.9), transparent 60%),
+      radial-gradient(1px 1px at 25% 60%, rgba(255,255,255,0.7), transparent 60%),
+      radial-gradient(1.5px 1.5px at 40% 25%, rgba(255,255,255,0.85), transparent 60%),
+      radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,0.6), transparent 60%),
+      radial-gradient(1px 1px at 68% 10%, rgba(255,255,255,0.8), transparent 60%),
+      radial-gradient(1.5px 1.5px at 80% 50%, rgba(255,255,255,0.9), transparent 60%),
+      radial-gradient(1px 1px at 90% 75%, rgba(255,255,255,0.65), transparent 60%),
+      radial-gradient(1px 1px at 15% 90%, rgba(255,255,255,0.55), transparent 60%),
+      radial-gradient(1px 1px at 33% 40%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(1.5px 1.5px at 47% 95%, rgba(255,255,255,0.7), transparent 60%),
+      radial-gradient(1px 1px at 60% 35%, rgba(255,255,255,0.6), transparent 60%),
+      radial-gradient(1px 1px at 73% 65%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(1px 1px at 85% 20%, rgba(255,255,255,0.75), transparent 60%),
+      radial-gradient(1px 1px at 95% 40%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(1px 1px at 5% 45%, rgba(255,255,255,0.6), transparent 60%);
+    background-repeat: repeat;
+    background-size: 340px 340px;
+  }
+
+  .unit {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border-radius: 22px;
+    border: 1px solid rgba(233,229,245,0.08);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---------- HEADER / DECK ---------- */
+  .deck {
+    background: var(--housing-black);
+    padding: 20px 20px 26px;
+    position: relative;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .brand-title {
+    font-family: 'Arial Narrow', 'JetBrains Mono', sans-serif;
+    font-weight: 800;
+    font-stretch: condensed;
+    letter-spacing: 0.02em;
+    font-size: 32px;
+    line-height: 0.86;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #FFFFFF 0%, #D8B4FE 45%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px rgba(168,85,247,0.35));
+  }
+
+  .brand-title .line2 {
+    display: block;
+    letter-spacing: 0.22em;
+  }
+
+  .brand-sub {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--violet-soft);
+    text-transform: uppercase;
+    margin-top: 8px;
+    opacity: 0.9;
+  }
+
+  .badge {
+    font-size: 8.5px;
+    color: rgba(233,229,245,0.4);
+    text-align: right;
+    letter-spacing: 0.08em;
+    line-height: 1.6;
+  }
+
+  /* Reels */
+  .reels {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 28px;
+    padding: 6px 0 4px;
+  }
+
+  .reel-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .reel {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--panel-2);
+    border: 2px solid rgba(233,229,245,0.15);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s linear;
+  }
+
+  .reel svg { width: 100%; height: 100%; }
+
+  .reel.spinning {
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .tape-thread {
+    width: 130px;
+    height: 2px;
+    background: rgba(233,229,245,0.18);
+    margin: 0 -30px;
+    position: relative;
+    top: -2px;
+  }
+
+  .reel-label {
+    font-size: 8px;
+    color: rgba(233,229,245,0.4);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .vu-row {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 16px;
+    height: 14px;
+  }
+
+  .vu-bar {
+    width: 4px;
+    height: 4px;
+    background: rgba(233,229,245,0.10);
+    border-radius: 1px;
+    align-self: flex-end;
+    transition: height 0.08s ease, background 0.08s ease;
+  }
+
+  .vu-bar.lit { background: var(--violet); }
+  .vu-bar.lit.peak { background: var(--violet-soft); }
+
+  /* ---------- BODY ---------- */
+  .body {
+    padding: 22px 20px 24px;
+  }
+
+  .section {
+    margin-bottom: 22px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .section-hint {
+    font-size: 9px;
+    color: rgba(233,229,245,0.4);
+    letter-spacing: 0.02em;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    border: 1.5px dashed var(--line-strong);
+    border-radius: 12px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--panel-2);
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+
+  .dropzone:active { background: rgba(233,229,245,0.06); }
+
+  .dropzone.has-file {
+    border-style: solid;
+    border-color: var(--violet);
+    background: rgba(168,85,247,0.08);
+  }
+
+  .dropzone.drag-over {
+    border-color: var(--violet-soft);
+    background: rgba(192,132,252,0.1);
+  }
+
+  .dz-icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+
+  .dz-text {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .dz-sub {
+    font-size: 9.5px;
+    color: rgba(233,229,245,0.4);
+    margin-top: 4px;
+  }
+
+  input[type="file"] { display: none; }
+
+  .original-play-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1px solid var(--line-strong);
+    background: var(--panel-2);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .original-play-btn:active { transform: translateY(1px); }
+
+  .original-play-btn.playing {
+    background: var(--violet-dim);
+    color: var(--off-white);
+    border-color: var(--violet-dim);
+  }
+
+  .waveform {
+    margin-top: 10px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--housing-black);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    display: none;
+  }
+  .waveform.visible { display: block; }
+  .waveform canvas { width: 100%; height: 100%; display: block; }
+
+  /* BPM control */
+  .bpm-panel {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+
+  .bpm-readout {
+    font-size: 28px;
+    font-weight: 700;
+    min-width: 72px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bpm-readout span {
+    font-size: 10px;
+    display: block;
+    letter-spacing: 0.1em;
+    color: rgba(233,229,245,0.4);
+    font-weight: 500;
+  }
+
+  .bpm-controls { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    background: var(--line-strong);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--violet);
+    border: 2px solid var(--off-white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    cursor: pointer;
+  }
+
+  .bpm-tap {
+    align-self: flex-start;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--violet-soft);
+    background: none;
+    border: none;
+    padding: 2px 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .export-bpm-panel { margin-top: 8px; }
+  .export-bpm-panel .bpm-readout { color: var(--violet-soft); }
+  .pitch-panel { margin-top: 8px; }
+  .pitch-panel .bpm-readout { color: var(--violet-soft); }
+  .export-bpm-hint {
+    font-size: 9px;
+    color: rgba(233,229,245,0.4);
+    letter-spacing: 0.03em;
+  }
+
+  /* Vibe selector */
+  .vibe-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .vibe-opt {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .vibe-opt:active { transform: translateY(1px); }
+
+  .vibe-opt.active {
+    border-color: var(--violet);
+    background: rgba(168,85,247,0.1);
+  }
+
+  .vibe-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .vibe-opt.active .vibe-name { color: var(--violet-soft); }
+
+  .vibe-desc {
+    font-size: 9px;
+    color: rgba(233,229,245,0.4);
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+
+  /* Unstable / Drift mode toggles */
+  .mode-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .mode-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .mode-toggle:active { transform: translateY(1px); }
+
+  .mode-toggle.on {
+    border-color: var(--violet-soft);
+    background: rgba(192,132,252,0.08);
+  }
+
+  .mode-name {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .mode-toggle.on .mode-name {
+    color: var(--violet-soft);
+  }
+
+  .mode-toggle.on .mode-name::before {
+    content: "● ";
+    font-size: 8px;
+  }
+
+  .mode-desc {
+    font-size: 8.5px;
+    color: rgba(233,229,245,0.4);
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+
+  /* Pedal chain */
+  .chain {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pedal {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0;
+    opacity: 0.6;
+    overflow: hidden;
+    transition: opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .pedal.selected {
+    opacity: 1;
+    border-color: var(--violet);
+    background: rgba(168,85,247,0.08);
+  }
+
+  .pedal.selected.just-landed .pedal-header {
+    animation: land 0.4s ease;
+  }
+
+  @keyframes land {
+    0% { transform: scale(0.97); }
+    60% { transform: scale(1.008); }
+    100% { transform: scale(1); }
+  }
+
+  .pedal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .pedal-header:active { transform: scale(0.985); }
+
+  .pedal-led {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(233,229,245,0.15);
+    flex-shrink: 0;
+    box-shadow: none;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .pedal.selected .pedal-led {
+    background: var(--violet-soft);
+    box-shadow: 0 0 6px 1px rgba(192,132,252,0.7);
+  }
+
+  .pedal-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    min-width: 92px;
+    text-transform: uppercase;
+  }
+
+  .pedal-meter {
+    flex: 1;
+    height: 4px;
+    background: rgba(233,229,245,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .pedal-meter-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--violet);
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.2,0.8,0.2,1);
+  }
+
+  .pedal-val {
+    font-size: 9.5px;
+    min-width: 44px;
+    text-align: right;
+    color: rgba(233,229,245,0.45);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Per-pedal intensity panel: slides open smoothly beneath the header */
+  .pedal-panel {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.32s cubic-bezier(0.2,0.8,0.2,1), opacity 0.24s ease, padding 0.32s cubic-bezier(0.2,0.8,0.2,1);
+    padding: 0 12px;
+  }
+
+  .pedal.selected .pedal-panel {
+    max-height: 56px;
+    opacity: 1;
+    padding: 2px 12px 12px;
+  }
+
+  .intensity-switch {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .intensity-opt {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 9px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .intensity-opt.active {
+    background: var(--violet);
+    color: var(--off-white);
+    border-color: var(--violet);
+  }
+
+  .intensity-opt:active { transform: translateY(1px); }
+
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    background: var(--violet);
+    color: var(--off-white);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--violet-dim);
+    transition: transform 0.08s, box-shadow 0.08s;
+    position: relative;
+  }
+
+  .generate-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--violet-dim);
+  }
+
+  .generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .generate-btn .sub {
+    display: block;
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+    opacity: 0.75;
+    font-weight: 500;
+    margin-top: 3px;
+    text-transform: none;
+  }
+
+  /* Transport */
+  .transport {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .transport button {
+    flex: 1;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1px solid var(--line-strong);
+    background: var(--panel-2);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .transport button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .transport button.primary {
+    background: var(--violet-dim);
+    color: var(--off-white);
+    border-color: var(--violet-dim);
+  }
+
+  .transport button.export {
+    background: var(--violet);
+    color: var(--off-white);
+    border-color: var(--violet);
+  }
+
+  .transport button:active:not(:disabled) { transform: translateY(1px); }
+
+  .status-line {
+    text-align: center;
+    font-size: 9.5px;
+    color: rgba(233,229,245,0.45);
+    letter-spacing: 0.08em;
+    margin-top: 14px;
+    text-transform: uppercase;
+    min-height: 12px;
+  }
+
+  .footer-strip {
+    padding: 12px 20px 16px;
+    text-align: center;
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    color: rgba(233,229,245,0.3);
+    text-transform: uppercase;
+  }
+
+  /* Export "bitte warten" popup */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 26px 34px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    min-width: 190px;
+  }
+  .modal-spinner {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid rgba(233,229,245,0.15);
+    border-top-color: var(--violet);
+    margin: 0 auto 12px;
+    animation: modalspin 0.7s linear infinite;
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--violet-soft);
+  }
+  .modal-spinner.done { animation: none; border-color: transparent; }
+  @keyframes modalspin { to { transform: rotate(360deg); } }
+  .modal-text {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reel.spinning { animation: none; }
+    .pedal.active.just-landed { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="unit">
+
+  <div class="deck">
+    <div class="brand-row">
+      <div>
+        <div class="brand-title">Tape<span class="line2">Reflex</span></div>
+        <div class="brand-sub">Lofi Loop Machine</div>
+      </div>
+      <div class="badge">MODELL TR-1<br>ZUFALLSKETTE</div>
+    </div>
+
+    <div class="reels">
+      <div class="reel-wrap">
+        <div class="reel" id="reelLeft">
+          <svg viewBox="0 0 68 68"><g stroke="rgba(233,229,245,0.3)" stroke-width="2"><line x1="34" y1="8" x2="34" y2="20"/><line x1="34" y1="48" x2="34" y2="60"/><line x1="8" y1="34" x2="20" y2="34"/><line x1="48" y1="34" x2="60" y2="34"/></g></svg>
+        </div>
+        <div class="reel-label">Input</div>
+      </div>
+      <div class="tape-thread"></div>
+      <div class="reel-wrap">
+        <div class="reel" id="reelRight">
+          <svg viewBox="0 0 68 68"><g stroke="rgba(233,229,245,0.3)" stroke-width="2"><line x1="34" y1="8" x2="34" y2="20"/><line x1="34" y1="48" x2="34" y2="60"/><line x1="8" y1="34" x2="20" y2="34"/><line x1="48" y1="34" x2="60" y2="34"/></g></svg>
+        </div>
+        <div class="reel-label">Output</div>
+      </div>
+    </div>
+
+    <div class="vu-row" id="vuRow"></div>
+    <div class="status-line" id="statusLine">Bereit — Loop laden</div>
+  </div>
+
+  <div class="body">
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">01 · Loop</span>
+        <span class="section-hint" id="fileHint">kein Loop geladen</span>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">＋</div>
+        <div class="dz-text">Loop antippen zum Laden</div>
+        <div class="dz-sub">WAV, MP3, M4A</div>
+        <input type="file" id="fileInput" accept="audio/*">
+      </div>
+      <div class="waveform" id="waveformWrap"><canvas id="waveformCanvas"></canvas></div>
+      <button class="original-play-btn" id="originalPlayBtn" style="display:none;">▶ Original abspielen</button>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">02 · Tempo</span>
+        <span class="section-hint">für Delay-Sync, Export &amp; Pitch</span>
+      </div>
+      <div class="bpm-panel">
+        <div class="bpm-readout" id="bpmReadout">92<span>BPM</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="bpmSlider" min="60" max="180" value="92" step="1">
+          <button class="bpm-tap" id="tapTempo">Tap Tempo</button>
+        </div>
+      </div>
+      <div class="bpm-panel export-bpm-panel">
+        <div class="bpm-readout" id="exportBpmReadout">92<span>EXPORT</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="exportBpmSlider" min="60" max="180" value="92" step="1">
+          <span class="export-bpm-hint" id="exportBpmHint">gleich wie Original</span>
+        </div>
+      </div>
+      <div class="bpm-panel pitch-panel">
+        <div class="bpm-readout" id="pitchReadout">0<span>PITCH</span></div>
+        <div class="bpm-controls">
+          <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
+          <span class="export-bpm-hint" id="pitchHint">dunkler ← Mitte → höher</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">03 · Vibe</span>
+        <span class="section-hint" id="vibeHint">bestimmt Effekt-Auswahl beim Generieren</span>
+      </div>
+      <div class="vibe-grid" id="vibeGrid"></div>
+      <div class="mode-row">
+        <button class="mode-toggle" id="unstableToggle">
+          <span class="mode-name">Unstable</span>
+          <span class="mode-desc">mehr Zufall, rauere Sprünge</span>
+        </button>
+        <button class="mode-toggle" id="driftToggle">
+          <span class="mode-name">Drift</span>
+          <span class="mode-desc">leichtes analoges Timing-Wandern</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">04 · Effekte</span>
+        <span class="section-hint" id="chainHint">antippen zum Auswählen + Stärke wählen</span>
+      </div>
+      <div class="chain" id="chain"></div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" disabled>
+      Generate
+      <span class="sub">würfelt Ausprägung deiner Effekte</span>
+    </button>
+
+    <div class="transport">
+      <button class="primary" id="playBtn" disabled>▶ Abspielen</button>
+      <button class="export" id="exportBtn" disabled>⇩ WAV Export</button>
+    </div>
+  </div>
+
+  <div class="footer-strip">Alles läuft lokal im Browser · nichts wird hochgeladen</div>
+</div>
+
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-box">
+    <div class="modal-spinner" id="modalSpinner"></div>
+    <div class="modal-text" id="modalText">Bitte warten …</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ---------- State ----------
+  let audioCtx = null;
+  let originalBuffer = null;
+  let processedBuffer = null;
+  let sourceNode = null;
+  let originalSourceNode = null;
+  let isPlaying = false;
+  let isPlayingOriginal = false;
+  let currentBpm = 92;
+  let exportBpm = 92;
+  let exportBpmTouched = false;
+  let pitchSemitones = 0;
+  let tapTimes = [];
+  const INTENSITY_RANGES = {
+    low:  { min: 8,  max: 32 },
+    mid:  { min: 30, max: 65 },
+    high: { min: 60, max: 100 }
+  };
+  // Wow/Flutter "niedrig" war sonst noch recht deutlich hörbar — eigene, sanftere Range dafür
+  const WOW_LOW_RANGE = { min: 3, max: 15 };
+  const pedalIntensity = {}; // key -> 'low' | 'mid' | 'high', per-pedal
+
+  const PEDAL_DEFS = [
+    { key: 'filter',   name: 'Filter',      unit: '',   min: 0, max: 100 },
+    { key: 'drive',    name: 'Drive',       unit: '',   min: 0, max: 100 },
+    { key: 'tapesat',  name: 'Tape Sat',    unit: '',   min: 0, max: 100 },
+    { key: 'bitcrush', name: 'Bitcrush',    unit: '',   min: 0, max: 100 },
+    { key: 'wowflutter', name: 'Wow/Flutter', unit: '', min: 0, max: 100 },
+    { key: 'vinyl',    name: 'Vinyl Noise', unit: '',   min: 0, max: 100 },
+    { key: 'chorus',   name: 'Chorus',      unit: '',   min: 0, max: 100 },
+    { key: 'phaser',   name: 'Phaser',      unit: '',   min: 0, max: 100 },
+    { key: 'tremolo',  name: 'Tremolo',     unit: '',   min: 0, max: 100 },
+    { key: 'widener',  name: 'Stereo Wide', unit: '',   min: 0, max: 100 },
+    { key: 'sidechain', name: 'Sidechain',  unit: '',   min: 0, max: 100 },
+    { key: 'delay',    name: 'Delay',       unit: '',   min: 0, max: 100 },
+    { key: 'reverb',   name: 'Reverb',      unit: '',   min: 0, max: 100 },
+    { key: 'chaos',    name: 'BPM Delay + Reverse', unit: '',  min: 0, max: 100 }
+  ];
+
+  let currentChain = {}; // key -> {active, amount}
+  const selectedEffects = new Set(['filter', 'drive', 'wowflutter', 'vinyl']); // sensible defaults
+  PEDAL_DEFS.forEach(def => { pedalIntensity[def.key] = 'mid'; });
+
+  // Vibes: wie bei Toneflex ("Vibe wählen -> Generate") legt jeder Vibe fest,
+  // welche Pedale bevorzugt aktiv sind und in welcher Stärke gewürfelt wird.
+  // Beim Klick auf einen Vibe wird die Effekte-Sektion entsprechend vorbelegt,
+  // Generate würfelt danach wie gehabt nur noch die genauen Werte aus.
+  const VIBE_DEFS = [
+    {
+      key: 'lofi',
+      name: 'Lofi',
+      desc: 'warm, staubig, dezent',
+      effects: { filter: 'mid', tapesat: 'low', wowflutter: 'low', vinyl: 'mid' }
+    },
+    {
+      key: 'cassette',
+      name: 'Cassette',
+      desc: 'Band, Wobble, Hiss',
+      effects: { tapesat: 'mid', wowflutter: 'mid', vinyl: 'high', bitcrush: 'low' }
+    },
+    {
+      key: 'warped',
+      name: 'Warped',
+      desc: 'kaputt, verzogen, extrem',
+      effects: { wowflutter: 'high', bitcrush: 'high', chaos: 'mid', drive: 'mid' }
+    },
+    {
+      key: 'radio',
+      name: 'Radio',
+      desc: 'eng, komprimiert, Funk',
+      effects: { filter: 'high', drive: 'low', tremolo: 'low', vinyl: 'low' }
+    }
+  ];
+  let activeVibe = null; // key of VIBE_DEFS, or null = manuell / kein Vibe
+  let unstableMode = false; // Toneflex "Unstable": breitere Zufallsstreuung, rauere Sprünge
+  let driftMode = false;    // Toneflex "Drift": leichtes analoges Timing-/Pitch-Wandern on top
+
+  // ---------- DOM refs ----------
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileHint = document.getElementById('fileHint');
+  const waveformWrap = document.getElementById('waveformWrap');
+  const waveformCanvas = document.getElementById('waveformCanvas');
+  const originalPlayBtn = document.getElementById('originalPlayBtn');
+  const bpmSlider = document.getElementById('bpmSlider');
+  const bpmReadout = document.getElementById('bpmReadout');
+  const tapTempoBtn = document.getElementById('tapTempo');
+  const exportBpmSlider = document.getElementById('exportBpmSlider');
+  const exportBpmReadout = document.getElementById('exportBpmReadout');
+  const exportBpmHint = document.getElementById('exportBpmHint');
+  const pitchSlider = document.getElementById('pitchSlider');
+  const pitchReadout = document.getElementById('pitchReadout');
+  const exportModal = document.getElementById('exportModal');
+  const modalSpinner = document.getElementById('modalSpinner');
+  const modalText = document.getElementById('modalText');
+  const chainEl = document.getElementById('chain');
+  const chainHint = document.getElementById('chainHint');
+  const vibeGridEl = document.getElementById('vibeGrid');
+  const vibeHint = document.getElementById('vibeHint');
+  const unstableToggle = document.getElementById('unstableToggle');
+  const driftToggle = document.getElementById('driftToggle');
+  const generateBtn = document.getElementById('generateBtn');
+  const playBtn = document.getElementById('playBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const statusLine = document.getElementById('statusLine');
+  const reelLeft = document.getElementById('reelLeft');
+  const reelRight = document.getElementById('reelRight');
+  const vuRow = document.getElementById('vuRow');
+
+  // build VU bars
+  const VU_COUNT = 24;
+  for (let i = 0; i < VU_COUNT; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'vu-bar';
+    vuRow.appendChild(bar);
+  }
+  const vuBars = Array.from(vuRow.children);
+
+  // build vibe buttons (Toneflex-Style: Vibe wählen -> Effekte + Stärken werden vorbelegt)
+  VIBE_DEFS.forEach(vibe => {
+    const opt = document.createElement('div');
+    opt.className = 'vibe-opt';
+    opt.id = 'vibe-' + vibe.key;
+    opt.innerHTML = `
+      <div class="vibe-name">${vibe.name}</div>
+      <div class="vibe-desc">${vibe.desc}</div>
+    `;
+    opt.addEventListener('click', () => applyVibe(vibe.key));
+    vibeGridEl.appendChild(opt);
+  });
+
+  function applyVibe(key) {
+    const vibe = VIBE_DEFS.find(v => v.key === key);
+    if (!vibe) return;
+    activeVibe = key;
+    selectedEffects.clear();
+    PEDAL_DEFS.forEach(def => {
+      const level = vibe.effects[def.key];
+      if (level) {
+        selectedEffects.add(def.key);
+        pedalIntensity[def.key] = level;
+      }
+    });
+    updateVibeDisplay();
+    updatePedalSelectionDisplay();
+  }
+
+  function updateVibeDisplay() {
+    VIBE_DEFS.forEach(vibe => {
+      document.getElementById('vibe-' + vibe.key).classList.toggle('active', activeVibe === vibe.key);
+    });
+    vibeHint.textContent = activeVibe ? VIBE_DEFS.find(v => v.key === activeVibe).name + ' aktiv' : 'bestimmt Effekt-Auswahl beim Generieren';
+  }
+
+  unstableToggle.addEventListener('click', () => {
+    unstableMode = !unstableMode;
+    unstableToggle.classList.toggle('on', unstableMode);
+  });
+  driftToggle.addEventListener('click', () => {
+    driftMode = !driftMode;
+    driftToggle.classList.toggle('on', driftMode);
+  });
+
+  // build pedal rows (tappable to select/deselect, with a per-pedal intensity panel that slides open)
+  PEDAL_DEFS.forEach(def => {
+    const row = document.createElement('div');
+    row.className = 'pedal';
+    row.id = 'pedal-' + def.key;
+    row.innerHTML = `
+      <div class="pedal-header" id="header-${def.key}">
+        <div class="pedal-led"></div>
+        <div class="pedal-name">${def.name}</div>
+        <div class="pedal-meter"><div class="pedal-meter-fill" id="fill-${def.key}"></div></div>
+        <div class="pedal-val" id="val-${def.key}">aus</div>
+      </div>
+      <div class="pedal-panel">
+        <div class="intensity-switch" data-key="${def.key}">
+          <button class="intensity-opt" data-level="low">Niedrig</button>
+          <button class="intensity-opt active" data-level="mid">Mittel</button>
+          <button class="intensity-opt" data-level="high">Stark</button>
+        </div>
+      </div>
+    `;
+    row.querySelector('.pedal-header').addEventListener('click', () => {
+      activeVibe = null; // manuelle Änderung verlässt den vordefinierten Vibe
+      updateVibeDisplay();
+      if (selectedEffects.has(def.key)) {
+        selectedEffects.delete(def.key);
+      } else {
+        selectedEffects.add(def.key);
+      }
+      updatePedalSelectionDisplay();
+    });
+    row.querySelector('.intensity-switch').addEventListener('click', (e) => {
+      e.stopPropagation(); // don't toggle selection when picking intensity
+      activeVibe = null;
+      updateVibeDisplay();
+      const btn = e.target.closest('.intensity-opt');
+      if (!btn) return;
+      pedalIntensity[def.key] = btn.dataset.level;
+      const switchEl = row.querySelector('.intensity-switch');
+      Array.from(switchEl.children).forEach(c => c.classList.toggle('active', c === btn));
+    });
+    chainEl.appendChild(row);
+  });
+
+  function updatePedalSelectionDisplay() {
+    let names = [];
+    PEDAL_DEFS.forEach(def => {
+      const row = document.getElementById('pedal-' + def.key);
+      const val = document.getElementById('val-' + def.key);
+      const fill = document.getElementById('fill-' + def.key);
+      const selected = selectedEffects.has(def.key);
+      row.classList.toggle('selected', selected);
+      const levelLabel = { low: 'niedrig', mid: 'mittel', high: 'stark' }[pedalIntensity[def.key]];
+      val.textContent = selected ? levelLabel : 'aus';
+      fill.style.width = selected ? '100%' : '0%';
+      const switchEl = row.querySelector('.intensity-switch');
+      Array.from(switchEl.children).forEach(c => c.classList.toggle('active', c.dataset.level === pedalIntensity[def.key]));
+      if (selected) names.push(def.name);
+    });
+    chainHint.textContent = names.length ? names.length + ' ausgewählt' : 'antippen zum Auswählen';
+  }
+  updatePedalSelectionDisplay();
+  updateVibeDisplay();
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  function setStatus(text) {
+    statusLine.textContent = text;
+  }
+
+  // ---------- File loading ----------
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+  });
+
+  function loadFile(file) {
+    setStatus('Lade Loop …');
+    const ctx = getAudioCtx();
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      ctx.decodeAudioData(ev.target.result.slice(0)).then(buffer => {
+        originalBuffer = buffer;
+        processedBuffer = null;
+        dropzone.classList.add('has-file');
+        fileHint.textContent = file.name.length > 22 ? file.name.slice(0, 20) + '…' : file.name;
+        document.querySelector('.dz-text').textContent = 'Loop geladen ✓';
+        document.querySelector('.dz-sub').textContent = (buffer.duration).toFixed(2) + 's · antippen zum Wechseln';
+        drawWaveform(buffer);
+        generateBtn.disabled = false;
+        playBtn.disabled = true;
+        exportBtn.disabled = true;
+        stopOriginalPlayback();
+        originalPlayBtn.style.display = 'block';
+        setStatus('Loop geladen — bereit zum Generieren');
+      }).catch(err => {
+        console.error(err);
+        setStatus('Fehler beim Dekodieren der Datei');
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function drawWaveform(buffer) {
+    waveformWrap.classList.add('visible');
+    const canvas = waveformCanvas;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = waveformWrap.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx2d = canvas.getContext('2d');
+    ctx2d.scale(dpr, dpr);
+    const w = rect.width, h = rect.height;
+    ctx2d.clearRect(0, 0, w, h);
+    const data = buffer.getChannelData(0);
+    const step = Math.ceil(data.length / w);
+    ctx2d.fillStyle = '#A855F7';
+    for (let x = 0; x < w; x++) {
+      let min = 1.0, max = -1.0;
+      for (let j = 0; j < step; j++) {
+        const idx = x * step + j;
+        if (idx >= data.length) break;
+        const v = data[idx];
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      const y1 = (1 + min) * h / 2;
+      const y2 = (1 + max) * h / 2;
+      ctx2d.fillRect(x, Math.min(y1, y2), 1, Math.max(2, Math.abs(y2 - y1)));
+    }
+  }
+
+  function stopOriginalPlayback() {
+    if (originalSourceNode) {
+      try { originalSourceNode.stop(); } catch(e) {}
+      originalSourceNode.disconnect();
+      originalSourceNode = null;
+    }
+    isPlayingOriginal = false;
+    originalPlayBtn.textContent = '▶ Original abspielen';
+    originalPlayBtn.classList.remove('playing');
+  }
+
+  originalPlayBtn.addEventListener('click', () => {
+    if (!originalBuffer) return;
+    if (isPlayingOriginal) {
+      stopOriginalPlayback();
+      return;
+    }
+    stopPlayback(); // stop processed playback if running
+    const ctx = getAudioCtx();
+    originalSourceNode = ctx.createBufferSource();
+    originalSourceNode.buffer = originalBuffer;
+    originalSourceNode.connect(ctx.destination);
+    originalSourceNode.onended = () => {
+      if (isPlayingOriginal) {
+        isPlayingOriginal = false;
+        originalPlayBtn.textContent = '▶ Original abspielen';
+        originalPlayBtn.classList.remove('playing');
+      }
+    };
+    originalSourceNode.start(0);
+    isPlayingOriginal = true;
+    originalPlayBtn.textContent = '■ Stop';
+    originalPlayBtn.classList.add('playing');
+  });
+
+  // ---------- BPM ----------
+  function syncExportHint() {
+    exportBpmHint.textContent = (exportBpm === currentBpm) ? 'gleich wie Original' : ('Original: ' + currentBpm + ' BPM');
+  }
+
+  bpmSlider.addEventListener('input', () => {
+    currentBpm = parseInt(bpmSlider.value, 10);
+    bpmReadout.innerHTML = currentBpm + '<span>BPM</span>';
+    if (!exportBpmTouched) {
+      exportBpm = currentBpm;
+      exportBpmSlider.value = currentBpm;
+      exportBpmReadout.innerHTML = currentBpm + '<span>EXPORT</span>';
+    }
+    syncExportHint();
+  });
+
+  exportBpmSlider.addEventListener('input', () => {
+    exportBpmTouched = true;
+    exportBpm = parseInt(exportBpmSlider.value, 10);
+    exportBpmReadout.innerHTML = exportBpm + '<span>EXPORT</span>';
+    syncExportHint();
+  });
+
+  pitchSlider.addEventListener('input', () => {
+    pitchSemitones = parseInt(pitchSlider.value, 10);
+    const sign = pitchSemitones > 0 ? '+' : '';
+    pitchReadout.innerHTML = sign + pitchSemitones + '<span>PITCH</span>';
+  });
+
+  tapTempoBtn.addEventListener('click', () => {
+    const now = performance.now();
+    tapTimes.push(now);
+    if (tapTimes.length > 5) tapTimes.shift();
+    if (tapTimes.length >= 2) {
+      let intervals = [];
+      for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i-1]);
+      const avg = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+      let bpm = Math.round(60000 / avg);
+      bpm = Math.max(60, Math.min(180, bpm));
+      currentBpm = bpm;
+      bpmSlider.value = bpm;
+      bpmReadout.innerHTML = bpm + '<span>BPM</span>';
+      if (!exportBpmTouched) {
+        exportBpm = bpm;
+        exportBpmSlider.value = bpm;
+        exportBpmReadout.innerHTML = bpm + '<span>EXPORT</span>';
+      }
+      syncExportHint();
+    }
+    setTimeout(() => {
+      if (tapTimes.length && performance.now() - tapTimes[tapTimes.length-1] > 2000) tapTimes = [];
+    }, 2100);
+  });
+
+  // ---------- Chain generation (random) ----------
+  function randomChain() {
+    const chain = {};
+    PEDAL_DEFS.forEach(def => {
+      let active = selectedEffects.has(def.key);
+      // UNSTABLE: gelegentlich ein nicht ausgewähltes Pedal leicht mit anwerfen,
+      // damit die Kette rauer/unvorhersehbarer wird (Toneflex "Controlled Chaos").
+      if (!active && unstableMode && Math.random() < 0.12) active = true;
+      let range = INTENSITY_RANGES[pedalIntensity[def.key] || 'mid'];
+      if (def.key === 'wowflutter' && pedalIntensity[def.key] === 'low') range = WOW_LOW_RANGE;
+      // UNSTABLE weitet die Streuung nach oben aus -> mehr Ausreißer, weniger vorhersehbar
+      const spread = unstableMode ? (range.max - range.min) * 1.35 : (range.max - range.min);
+      const rawAmount = active ? range.min + Math.random() * spread : 0;
+      const amount = active ? Math.round(Math.max(0, Math.min(100, rawAmount))) : 0;
+      chain[def.key] = { active, amount, variant: active ? Math.random() : 0 };
+    });
+    return chain;
+  }
+
+  function renderChain(chain, animate) {
+    let activeNames = [];
+    PEDAL_DEFS.forEach((def, i) => {
+      const state = chain[def.key];
+      const row = document.getElementById('pedal-' + def.key);
+      const fill = document.getElementById('fill-' + def.key);
+      const val = document.getElementById('val-' + def.key);
+      const levelLabel = { low: 'niedrig', mid: 'mittel', high: 'stark' }[pedalIntensity[def.key]];
+      setTimeout(() => {
+        if (state.active) {
+          row.classList.add('selected');
+          if (animate) {
+            row.classList.remove('just-landed');
+            void row.offsetWidth;
+            row.classList.add('just-landed');
+          }
+          fill.style.width = state.amount + '%';
+          val.textContent = levelLabel;
+          activeNames.push(def.name);
+        } else {
+          row.classList.remove('selected', 'just-landed');
+          fill.style.width = '0%';
+          val.textContent = 'aus';
+        }
+        if (i === PEDAL_DEFS.length - 1) {
+          chainHint.textContent = activeNames.length ? activeNames.length + ' generiert: ' + activeNames.join(' · ') : 'keine Effekte ausgewählt';
+        }
+      }, animate ? i * 70 : 0);
+    });
+  }
+
+  // ---------- Reel / VU animation during processing ----------
+  let vuAnimId = null;
+  function startVuAnim() {
+    reelLeft.classList.add('spinning');
+    reelRight.classList.add('spinning');
+    let t = 0;
+    function tick() {
+      t += 1;
+      vuBars.forEach((bar, i) => {
+        const phase = (t * 0.15 + i * 0.4);
+        const h = 4 + Math.abs(Math.sin(phase)) * 10 * Math.random();
+        bar.style.height = h + 'px';
+        bar.classList.toggle('lit', h > 6);
+        bar.classList.toggle('peak', h > 12);
+      });
+      vuAnimId = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+  function stopVuAnim(playing) {
+    if (!playing) {
+      reelLeft.classList.remove('spinning');
+      reelRight.classList.remove('spinning');
+      if (vuAnimId) cancelAnimationFrame(vuAnimId);
+      vuBars.forEach(bar => { bar.style.height = '4px'; bar.classList.remove('lit', 'peak'); });
+    }
+  }
+
+  // ---------- Pitch-Shift ohne Zeitdehnung (granular, Overlap-Add) ----------
+  // Verändert nur die Tonhöhe (ratio = 2^(semitones/12)), die Ausgabelänge bleibt
+  // exakt gleich der Eingabelänge — das Tempo/BPM bleibt davon unberührt.
+  // Technik: kurze, überlappende "Grains" werden mit geänderter Rate ausgelesen
+  // (dadurch ändert sich innerhalb des Grains die Tonhöhe) und mit Hann-Fenstern
+  // wieder lückenlos zusammengesetzt (Overlap-Add) — Standard-Ansatz für
+  // Echtzeit-fähiges Pitch-Shifting ohne aufwändige Phasenvocoder-FFT.
+  function pitchShiftBuffer(buffer, ratio) {
+    const sr = buffer.sampleRate;
+    const channels = buffer.numberOfChannels;
+    const len = buffer.length;
+    const out = audioCtx.createBuffer(channels, len, sr);
+
+    const grainSize = Math.max(512, Math.floor(sr * 0.06)); // ~60ms Grains
+    const hop = Math.floor(grainSize / 4); // 75% Überlappung für glatten Übergang
+
+    // Hann-Fenster vorab berechnen
+    const window = new Float32Array(grainSize);
+    for (let i = 0; i < grainSize; i++) {
+      window[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (grainSize - 1));
+    }
+
+    for (let ch = 0; ch < channels; ch++) {
+      const inData = buffer.getChannelData(ch);
+      const outData = out.getChannelData(ch);
+      const weightSum = new Float32Array(len);
+
+      // WICHTIG (2. Anlauf — der 1. Fix war noch falsch):
+      // Der Lesekopf darf auf MAKRO-Ebene (von Grain zu Grain) nur um `hop`
+      // vorrücken — genau wie der Schreibkopf. Sonst wird die Quelle über die
+      // gesamte Ausgabe hinweg nur zu einem Bruchteil (ratio) durchlaufen und
+      // der Rest des Songs bleibt ungehört -> klingt wie gestreckt/verlangsamt.
+      // Die Tonhöhenänderung passiert stattdessen NUR innerhalb jedes einzelnen
+      // Grains: dort wird mit der Rate `ratio` gelesen (kurzer, in sich
+      // resampleter Ausschnitt), aber jeder Grain startet an der unveränderten
+      // Makro-Position n*hop — dadurch bleibt Gesamtlänge/Timing exakt erhalten.
+      for (let outPos = 0; outPos < len; outPos += hop) {
+        const readStart = outPos; // Makro-Position = unverändert, kein *ratio hier
+        for (let i = 0; i < grainSize; i++) {
+          const outIdx = outPos + i;
+          if (outIdx >= len) break;
+          const readPos = readStart + i * ratio; // Mikro-Resampling innerhalb des Grains -> Pitch
+          const i0 = Math.floor(readPos);
+          const frac = readPos - i0;
+          let s0 = (i0 >= 0 && i0 < len) ? inData[i0] : 0;
+          let s1 = (i0 + 1 >= 0 && i0 + 1 < len) ? inData[i0 + 1] : 0;
+          const sample = s0 + (s1 - s0) * frac;
+          const w = window[i];
+          outData[outIdx] += sample * w;
+          weightSum[outIdx] += w;
+        }
+      }
+
+      // Normalisieren, damit die Überlappung keine Lautstärkeschwankungen erzeugt
+      for (let i = 0; i < len; i++) {
+        if (weightSum[i] > 0.0001) outData[i] /= weightSum[i];
+      }
+    }
+
+    return out;
+  }
+
+  // ---------- DSP: offline rendering ----------
+  async function renderProcessedBuffer(buffer, chain, speedRatio) {
+    speedRatio = speedRatio || 1;
+    const sr = buffer.sampleRate;
+
+    // Pitch (Schritt 02) läuft jetzt UNABHÄNGIG vom Tempo: granulares Pitch-Shifting
+    // verändert nur die Tonhöhe, ohne die Länge/Geschwindigkeit des Buffers zu ändern.
+    // Das BPM-Tempo (speedRatio) bleibt separat über playbackRate gesteuert.
+    if (pitchSemitones !== 0) {
+      buffer = pitchShiftBuffer(buffer, Math.pow(2, pitchSemitones / 12));
+    }
+
+    const len = buffer.length;
+    const channels = buffer.numberOfChannels;
+
+    // Export-BPM verschiebt nur noch das Tempo (playbackRate) — die Tonhöhe wurde
+    // oben bereits unabhängig davon per Pitch-Shift gesetzt.
+    let playbackRate = speedRatio;
+
+    // Extra tail for delay/reverb, plus Platz für verlangsamte Wiedergabe
+    const tailSeconds = 2.5;
+    const stretchedLen = Math.ceil(len / playbackRate);
+    const totalLen = stretchedLen + Math.floor(tailSeconds * sr);
+
+    const offlineCtx = new OfflineAudioContext(channels, totalLen, sr);
+
+    const src = offlineCtx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = playbackRate;
+
+    let chainEnd = src;
+
+    // FILTER (lowpass, more aggressive with amount = darker/lofi)
+    if (chain.filter.active) {
+      const freq = 8000 - (chain.filter.amount / 100) * 6500; // 8000 -> 1500 Hz
+      const lp = offlineCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = Math.max(400, freq);
+      lp.Q.value = 0.7;
+      chainEnd.connect(lp);
+      chainEnd = lp;
+    }
+
+    // DRIVE (waveshaper saturation)
+    if (chain.drive.active) {
+      const shaper = offlineCtx.createWaveShaper();
+      const amount = chain.drive.amount / 100;
+      shaper.curve = makeDriveCurve(amount);
+      shaper.oversample = '4x';
+      const preGain = offlineCtx.createGain();
+      preGain.gain.value = 1 + amount * 2.5;
+      const postGain = offlineCtx.createGain();
+      postGain.gain.value = 1 / (1 + amount * 1.2);
+      chainEnd.connect(preGain);
+      preGain.connect(shaper);
+      shaper.connect(postGain);
+      chainEnd = postGain;
+    }
+
+    // TAPE SATURATION (warmer, softer saturation than Drive — rolls off highs slightly + gentle even-harmonic curve)
+    if (chain.tapesat.active) {
+      const amount = chain.tapesat.amount / 100;
+      const satShaper = offlineCtx.createWaveShaper();
+      satShaper.curve = makeTapeSatCurve(amount);
+      satShaper.oversample = '4x';
+      const preGain = offlineCtx.createGain();
+      preGain.gain.value = 1 + amount * 1.2;
+      const postGain = offlineCtx.createGain();
+      postGain.gain.value = 1 / (1 + amount * 0.5);
+      const warmthFilter = offlineCtx.createBiquadFilter();
+      warmthFilter.type = 'lowpass';
+      warmthFilter.frequency.value = 12000 - amount * 4000;
+      warmthFilter.Q.value = 0.5;
+      chainEnd.connect(preGain);
+      preGain.connect(satShaper);
+      satShaper.connect(warmthFilter);
+      warmthFilter.connect(postGain);
+      chainEnd = postGain;
+    }
+
+    // CHORUS (modulated delay, doubled voice)
+    if (chain.chorus.active) {
+      const amount = chain.chorus.amount / 100;
+      const v = chain.chorus.variant; // 0-1: shifts character between slow/deep and fast/subtle
+      const chorusDelay = offlineCtx.createDelay(0.05);
+      chorusDelay.delayTime.value = 0.012 + v * 0.014;
+      const chorusLFO = offlineCtx.createOscillator();
+      chorusLFO.frequency.value = 0.4 + v * 2.2 + amount * 0.6;
+      const chorusLFOGain = offlineCtx.createGain();
+      chorusLFOGain.gain.value = 0.003 + amount * 0.007;
+      chorusLFO.connect(chorusLFOGain);
+      chorusLFOGain.connect(chorusDelay.delayTime);
+      chorusLFO.start(0);
+      const chorusWet = offlineCtx.createGain();
+      chorusWet.gain.value = Math.min(0.5, amount * 0.55);
+      const chorusDry = offlineCtx.createGain();
+      chorusDry.gain.value = 1.0;
+      const chorusMerge = offlineCtx.createGain();
+      chainEnd.connect(chorusDry);
+      chorusDry.connect(chorusMerge);
+      chainEnd.connect(chorusDelay);
+      chorusDelay.connect(chorusWet);
+      chorusWet.connect(chorusMerge);
+      chainEnd = chorusMerge;
+    }
+
+    // PHASER (cascaded all-pass filters with LFO sweep)
+    if (chain.phaser.active) {
+      const amount = chain.phaser.amount / 100;
+      const v = chain.phaser.variant; // shifts between slow sweep and faster warble
+      const stages = 4;
+      let phaserChain = chainEnd;
+      const lfo = offlineCtx.createOscillator();
+      lfo.frequency.value = 0.1 + v * 0.6 + amount * 0.3;
+      const lfoGain = offlineCtx.createGain();
+      lfoGain.gain.value = 700 + amount * 1300;
+      const lfoOffset = offlineCtx.createConstantSource();
+      lfoOffset.offset.value = 800 + v * 900;
+      lfo.connect(lfoGain);
+      lfo.start(0);
+      lfoOffset.start(0);
+      const allpassStages = [];
+      for (let s = 0; s < stages; s++) {
+        const ap = offlineCtx.createBiquadFilter();
+        ap.type = 'allpass';
+        ap.Q.value = 1.2;
+        lfoGain.connect(ap.frequency);
+        lfoOffset.connect(ap.frequency);
+        phaserChain.connect(ap);
+        phaserChain = ap;
+        allpassStages.push(ap);
+      }
+      const phaserWet = offlineCtx.createGain();
+      phaserWet.gain.value = Math.min(0.6, amount * 0.65);
+      const phaserDry = offlineCtx.createGain();
+      phaserDry.gain.value = 1.0;
+      const phaserMerge = offlineCtx.createGain();
+      chainEnd.connect(phaserDry);
+      phaserDry.connect(phaserMerge);
+      phaserChain.connect(phaserWet);
+      phaserWet.connect(phaserMerge);
+      chainEnd = phaserMerge;
+    }
+
+    // TREMOLO (rhythmischer Lautstärke-Wobble)
+    if (chain.tremolo.active) {
+      const amount = chain.tremolo.amount / 100;
+      const v = chain.tremolo.variant;
+      const rate = 2 + v * 6; // 2–8 Hz
+      const trem = offlineCtx.createGain();
+      trem.gain.value = 1;
+      const lfo = offlineCtx.createOscillator();
+      lfo.frequency.value = rate;
+      const lfoGain = offlineCtx.createGain();
+      lfoGain.gain.value = amount * 0.45;
+      lfo.connect(lfoGain);
+      lfoGain.connect(trem.gain);
+      lfo.start(0);
+      chainEnd.connect(trem);
+      chainEnd = trem;
+    }
+
+    // SIDECHAIN PUMP (rhythmic gain ducking synced to BPM, classic pump effect)
+    if (chain.sidechain.active) {
+      const amount = chain.sidechain.amount / 100;
+      const beatDuration = 60 / currentBpm;
+      const pumpGain = offlineCtx.createGain();
+      pumpGain.gain.setValueAtTime(1, 0);
+      const totalBeats = Math.ceil(buffer.duration / beatDuration) + 2;
+      const duckDepth = 0.15 + amount * 0.65; // how deep the duck goes
+      for (let b = 0; b < totalBeats; b++) {
+        const t = b * beatDuration;
+        pumpGain.gain.setValueAtTime(1, t);
+        pumpGain.gain.linearRampToValueAtTime(1 - duckDepth, t + beatDuration * 0.08);
+        pumpGain.gain.linearRampToValueAtTime(1, t + beatDuration * 0.85);
+      }
+      chainEnd.connect(pumpGain);
+      chainEnd = pumpGain;
+    }
+
+    // BITCRUSH (via WaveShaper quantization + sample-and-hold using ScriptProcessor replacement: use custom curve trick)
+    // We implement bitcrush + wow/flutter + vinyl noise by rendering to a buffer first, then post-processing in JS.
+    const gainStage = offlineCtx.createGain();
+    gainStage.gain.value = 1.0;
+    chainEnd.connect(gainStage);
+    chainEnd = gainStage;
+
+    // DELAY
+    if (chain.delay.active) {
+      const v = chain.delay.variant;
+      // variant picks a note division so the same "strength" still sounds rhythmically different
+      const divisions = [0.25, 0.375, 0.5, 0.667]; // 1/16, dotted-1/16-ish, 1/8, triplet feel
+      const division = divisions[Math.floor(v * divisions.length) % divisions.length];
+      const delayTime = Math.max(0.06, Math.min(0.9, (60 / currentBpm) * division));
+      const delayNode = offlineCtx.createDelay(1.5);
+      delayNode.delayTime.value = delayTime;
+      const feedback = offlineCtx.createGain();
+      feedback.gain.value = Math.min(0.6, (chain.delay.amount / 100) * 0.65);
+      const wetGain = offlineCtx.createGain();
+      wetGain.gain.value = Math.min(0.55, chain.delay.amount / 100 * 0.6);
+      const dry = offlineCtx.createGain();
+      dry.gain.value = 1.0;
+
+      const merger = offlineCtx.createGain();
+      chainEnd.connect(dry);
+      dry.connect(merger);
+      chainEnd.connect(delayNode);
+      delayNode.connect(feedback);
+      feedback.connect(delayNode);
+      delayNode.connect(wetGain);
+      wetGain.connect(merger);
+      chainEnd = merger;
+    }
+
+    // REVERB (convolver with generated impulse response)
+    if (chain.reverb.active) {
+      const convolver = offlineCtx.createConvolver();
+      const v = chain.reverb.variant; // shifts room size independent of wet amount
+      const irDuration = 0.8 + v * 3.2;
+      convolver.buffer = makeImpulseResponse(offlineCtx, irDuration, 1.5 + v * 2);
+      const wet = offlineCtx.createGain();
+      wet.gain.value = Math.min(0.6, chain.reverb.amount / 100 * 0.65);
+      const dry = offlineCtx.createGain();
+      dry.gain.value = 1.0;
+      const merger = offlineCtx.createGain();
+      chainEnd.connect(dry);
+      dry.connect(merger);
+      chainEnd.connect(convolver);
+      convolver.connect(wet);
+      wet.connect(merger);
+      chainEnd = merger;
+    }
+
+    // BPM DELAY + REVERSE (ersetzt den früheren "Chaos Bounce")
+    // Teil 1: Stereo-Delay, dessen Zeit fest an die aktuell eingestellte BPM gekoppelt ist
+    //         (kein Zufalls-Wobble mehr — die Echos treffen exakt auf den Raster).
+    // Teil 2: Reverse-Tail — nur auf jedem 4. Takt (Takt 4, 8, 12, …) wird ein kurzes
+    //         Stück am Taktende rückwärts eingeblendet (kein kompletter Loop-Reverse).
+    if (chain.chaos.active) {
+      const amount = chain.chaos.amount / 100;
+      const v = chain.chaos.variant; // wählt die Notenunterteilung, damit gleiche Stärke rhythmisch variiert
+      const beatDuration = 60 / currentBpm;
+
+      // --- Teil 2 zuerst im Signalfluss: Reverse-Tail auf jeden 4. Takt anwenden ---
+      // Läuft auf dem rohen Eingangsbuffer (vor Delay), damit die Echos danach den
+      // Reverse-Tail mit auffangen. Wir bauen dafür einen neuen AudioBuffer mit den
+      // umgedrehten Schnipseln und spielen daraus ab statt aus dem Original.
+      let reverseSrc = chainEnd; // Fallback: unverändertes Signal
+      if (channels >= 1) {
+        const barDuration = beatDuration * 4; // 1 Takt = 4 Schläge
+        const tailFraction = 0.35; // wie viel vom 4. Takt rückwärts läuft (kurzes Ende des Takts)
+        const tailDuration = Math.min(barDuration * tailFraction, barDuration * 0.9);
+        const tailSamples = Math.max(1, Math.floor(tailDuration * sr));
+        const barSamples = Math.max(1, Math.floor(barDuration * sr));
+        const fadeSamples = Math.max(1, Math.floor(sr * 0.008)); // 8ms Crossfade gegen Klicks
+
+        const reversedBuf = offlineCtx.createBuffer(channels, len, sr);
+        for (let ch = 0; ch < channels; ch++) {
+          const src2 = buffer.getChannelData(ch);
+          const dst = reversedBuf.getChannelData(ch);
+          dst.set(src2); // erst normal kopieren
+          // jeden 4. Takt: das letzte Stück des Takts (tailSamples) rückwärts einsetzen
+          for (let barStart = 0; barStart < len; barStart += barSamples) {
+            const barIndex = Math.floor(barStart / barSamples) + 1; // 1-basiert
+            if (barIndex % 4 !== 0) continue; // nur jeder 4. Takt
+            const tailStart = Math.min(barStart + barSamples - tailSamples, len - tailSamples);
+            if (tailStart < 0) continue;
+            const tailEnd = Math.min(tailStart + tailSamples, len);
+            const segLen = tailEnd - tailStart;
+            if (segLen <= 0) continue;
+            for (let i = 0; i < segLen; i++) {
+              const reversedVal = src2[tailEnd - 1 - i];
+              // Crossfade am Anfang und Ende des Tails, damit kein Knackser entsteht
+              let g = 1;
+              if (i < fadeSamples) g = i / fadeSamples;
+              else if (i > segLen - fadeSamples) g = (segLen - i) / fadeSamples;
+              dst[tailStart + i] = src2[tailStart + i] * (1 - g) + reversedVal * g;
+            }
+          }
+        }
+
+        const revBufSrc = offlineCtx.createBufferSource();
+        revBufSrc.buffer = reversedBuf;
+        revBufSrc.playbackRate.value = src.playbackRate.value;
+        revBufSrc.start(0);
+
+        // Reverse-Tail läuft durch ein eigenes kurzes Reverb (dezenter Raum-Touch),
+        // damit er sich weich in den Hintergrund einbettet statt hart vorne zu stehen.
+        const reverseConvolver = offlineCtx.createConvolver();
+        reverseConvolver.buffer = makeImpulseResponse(offlineCtx, 0.7 + v * 0.3, 2.2);
+
+        // Dry bleibt bei voller Lautstärke — der Tail wird nur LEISE untergemischt,
+        // statt das Originalsignal an dieser Stelle zu verdrängen.
+        const reverseWet = offlineCtx.createGain();
+        reverseWet.gain.value = Math.min(0.32, 0.08 + amount * 0.24); // deutlich zurückhaltender
+        const reverseDry = offlineCtx.createGain();
+        reverseDry.gain.value = 1.0;
+        const reverseMerge = offlineCtx.createGain();
+        chainEnd.connect(reverseDry);
+        reverseDry.connect(reverseMerge);
+        revBufSrc.connect(reverseConvolver);
+        reverseConvolver.connect(reverseWet);
+        reverseWet.connect(reverseMerge);
+        chainEnd = reverseMerge;
+        reverseSrc = chainEnd;
+      }
+
+      // --- Teil 1: BPM-synchrones Delay — EIN einzelnes Echo, KEIN Feedback-Loop.
+      // Kein Aufstapeln von Delay-auf-Delay mehr; "extremer" kommt jetzt allein
+      // über den Wet-Anteil (wie laut das eine Echo im Mix steht), nicht über Wiederholungen.
+      const divisions = [0.5, 0.75, 1.0, 1.5, 2.0]; // 1/8, punktiert-1/8, 1/4, punktiert-1/4, 1/2 zur Bar
+      const division = divisions[Math.floor(v * divisions.length) % divisions.length];
+      const delayTime = Math.max(0.05, Math.min(1.2, beatDuration * division));
+
+      const delayNode = offlineCtx.createDelay(1.5);
+      delayNode.delayTime.value = delayTime;
+      const wetGain = offlineCtx.createGain();
+      wetGain.gain.value = Math.min(0.85, 0.35 + amount * 0.5); // deutlich hörbares, aber einzelnes Echo
+      const dry = offlineCtx.createGain();
+      dry.gain.value = 1.0;
+      const mixOut = offlineCtx.createGain();
+
+      chainEnd.connect(dry);
+      dry.connect(mixOut);
+
+      if (channels === 2) {
+        // Stereo: EIN Delay pro Kanal, leicht versetzt (kein Ping-Pong-Loop) für Breite
+        const delayL = offlineCtx.createDelay(1.5);
+        const delayR = offlineCtx.createDelay(1.5);
+        delayL.delayTime.value = delayTime;
+        delayR.delayTime.value = delayTime * 1.06; // minimal versetzt -> breiter Stereo-Eindruck, kein Loop
+        const merger2 = offlineCtx.createChannelMerger(2);
+
+        chainEnd.connect(delayL);
+        delayL.connect(merger2, 0, 0);
+        chainEnd.connect(delayR);
+        delayR.connect(merger2, 0, 1);
+
+        merger2.connect(wetGain);
+        wetGain.connect(mixOut);
+      } else {
+        chainEnd.connect(delayNode);
+        delayNode.connect(wetGain);
+        wetGain.connect(mixOut);
+      }
+
+      chainEnd = mixOut;
+    }
+
+    const finalGain = offlineCtx.createGain();
+    finalGain.gain.value = 0.9;
+    chainEnd.connect(finalGain);
+    finalGain.connect(offlineCtx.destination);
+
+    src.start(0);
+
+    const rendered = await offlineCtx.startRendering();
+
+    // Post-process in JS: bitcrush, wow/flutter, vinyl noise (sample-accurate, easy to do manually)
+    return postProcessBuffer(rendered, chain, sr);
+  }
+
+  function makeDriveCurve(amount) {
+    const n = 44100;
+    const curve = new Float32Array(n);
+    const k = amount * 40 + 1;
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / n - 1;
+      curve[i] = Math.tanh(k * x) / Math.tanh(k);
+    }
+    return curve;
+  }
+
+  function makeTapeSatCurve(amount) {
+    // Gentler, warmer curve than Drive: soft-knee with slight even-harmonic asymmetry (tape-like)
+    const n = 44100;
+    const curve = new Float32Array(n);
+    const k = amount * 6 + 0.5;
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / n - 1;
+      let y = Math.tanh(k * x) / Math.tanh(k);
+      // slight asymmetric bias for even harmonics (tape warmth)
+      y += 0.04 * amount * (x * x) * Math.sign(x || 1);
+      curve[i] = Math.max(-1, Math.min(1, y));
+    }
+    return curve;
+  }
+
+  function makeImpulseResponse(ctx, duration, decay) {
+    const sr = ctx.sampleRate;
+    const length = Math.floor(sr * duration);
+    const impulse = ctx.createBuffer(2, length, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = impulse.getChannelData(ch);
+      for (let i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      }
+    }
+    return impulse;
+  }
+
+  function postProcessBuffer(buffer, chain, sr) {
+    const channels = buffer.numberOfChannels;
+    const len = buffer.length;
+    const out = audioCtx.createBuffer(channels, len, sr);
+
+    // Precompute wow/flutter LFO params
+    const wowActive = chain.wowflutter.active;
+    const wowAmt = chain.wowflutter.amount / 100;
+    const wowV = chain.wowflutter.variant; // nur noch Charakter-Variation (wow-lastig vs. flutter-lastig), keine Tempo-Steuerung mehr
+    // Geschwindigkeit richtet sich nach dem gewählten Level (niedrig/mittel/stark),
+    // nicht mehr stetig nach amount — so lässt sich "stark" bewusst LANGSAMER
+    // machen als "mittel" (gewollter Meme-Effekt: je stärker, desto träger/komischer).
+    // "Mittel" wurde außerdem insgesamt nochmal verlangsamt, war noch zu schnell.
+    const wowLevel = pedalIntensity['wowflutter'];
+    const rateBaseByLevel = {
+      low:  { wow: 0.10, flutter: 1.0 },
+      mid:  { wow: 0.30, flutter: 2.6 },
+      high: { wow: 0.18, flutter: 1.6 }  // langsamer als "mittel", mit Absicht
+    };
+    const rateBase = rateBaseByLevel[wowLevel] || rateBaseByLevel.mid;
+    const wowRate = rateBase.wow + (1 - wowV) * 0.15 * wowAmt;
+    const flutterRate = rateBase.flutter + wowV * 0.8 * wowAmt;
+    const wowMix = 0.3 + (1 - wowV) * 0.5;
+    const maxDelaySamples = Math.floor(sr * 0.008 * (0.1 + wowAmt));
+
+    const crushActive = chain.bitcrush.active;
+    const crushAmt = chain.bitcrush.amount / 100;
+    const crushV = chain.bitcrush.variant; // balance between bit-depth crunch and sample-rate crunch
+    const bitDepth = Math.max(3, Math.round(16 - crushAmt * (6 + crushV * 8)));
+    const sampleHoldFactor = Math.max(1, Math.round(1 + crushAmt * (4 + (1 - crushV) * 10)));
+    const levels = Math.pow(2, bitDepth);
+
+    const vinylActive = chain.vinyl.active;
+    const vinylAmt = chain.vinyl.amount / 100;
+
+    // DRIFT (Toneflex "Analog Movement"): globale, sehr dezente Timing-/Pitch-
+    // Schwankung, unabhängig vom Wow/Flutter-Pedal — simuliert das leichte
+    // Wandern echter analoger Hardware. Läuft additiv zum Pedal-Delay oben.
+    const driftRate = 0.06; // sehr langsam, kaum wahrnehmbar als einzelne Bewegung
+    const driftDepthSamples = Math.floor(sr * 0.0012); // winzig, nur "Lebendigkeit"
+    const driftPhase = Math.random() * Math.PI * 2;
+
+    for (let ch = 0; ch < channels; ch++) {
+      const inData = buffer.getChannelData(ch);
+      const outData = out.getChannelData(ch);
+
+      // Wow/flutter: variable delay read with linear interpolation
+      let delayBuf = inData;
+      if (wowActive || driftMode) {
+        const tmp = new Float32Array(len);
+        for (let i = 0; i < len; i++) {
+          const t = i / sr;
+          let offset = 0;
+          if (wowActive) {
+            const wobble = Math.sin(2 * Math.PI * wowRate * t) * wowMix + Math.sin(2 * Math.PI * flutterRate * t) * (1 - wowMix);
+            offset += wobble * maxDelaySamples;
+          }
+          if (driftMode) {
+            offset += Math.sin(2 * Math.PI * driftRate * t + driftPhase) * driftDepthSamples;
+          }
+          const baseShift = wowActive ? maxDelaySamples : driftDepthSamples;
+          const readPos = i - baseShift + offset;
+          const i0 = Math.floor(readPos);
+          const frac = readPos - i0;
+          const s0 = (i0 >= 0 && i0 < len) ? inData[i0] : 0;
+          const s1 = (i0 + 1 >= 0 && i0 + 1 < len) ? inData[i0 + 1] : 0;
+          tmp[i] = s0 + (s1 - s0) * frac;
+        }
+        delayBuf = tmp;
+      }
+
+      // Bitcrush: quantize + sample & hold
+      let heldValue = 0;
+      for (let i = 0; i < len; i++) {
+        let sample = delayBuf[i];
+
+        if (crushActive) {
+          if (i % sampleHoldFactor === 0) {
+            heldValue = Math.round(sample * levels) / levels;
+          }
+          sample = heldValue;
+        }
+
+        if (vinylActive) {
+          // crackle: sparse impulses
+          const crackle = (Math.random() < 0.0025 * vinylAmt) ? (Math.random() * 2 - 1) * 0.35 * vinylAmt : 0;
+          // hiss: continuous low-level noise
+          const hiss = (Math.random() * 2 - 1) * 0.02 * vinylAmt;
+          sample = sample * (1 - 0.05 * vinylAmt) + crackle + hiss;
+        }
+
+        outData[i] = Math.max(-1, Math.min(1, sample));
+      }
+    }
+
+    // Stereo Widener: Mid/Side processing, needs both channels — runs after per-channel loop above
+    if (chain.widener.active && channels === 2) {
+      const amt = chain.widener.amount / 100;
+      const widthFactor = 1 + amt * 1.2; // boost side signal
+      const left = out.getChannelData(0);
+      const right = out.getChannelData(1);
+      for (let i = 0; i < len; i++) {
+        const mid = (left[i] + right[i]) * 0.5;
+        const side = (left[i] - right[i]) * 0.5 * widthFactor;
+        left[i] = Math.max(-1, Math.min(1, mid + side));
+        right[i] = Math.max(-1, Math.min(1, mid - side));
+      }
+    }
+
+    // Anti-Klick: kurzes Fade-in und Fade-out (~15 ms).
+    // Verhindert den Knackser, der entsteht wenn der Buffer bei einem Sample-Wert
+    // ungleich Null beginnt oder endet (Sprung aus/in die Stille).
+    const fadeSamples = Math.min(Math.floor(sr * 0.015), Math.floor(len * 0.05));
+    for (let ch = 0; ch < channels; ch++) {
+      const data = out.getChannelData(ch);
+      for (let i = 0; i < fadeSamples; i++) {
+        const gain = i / fadeSamples;          // linear 0 → 1
+        data[i] *= gain;                       // Fade-in am Anfang
+        data[len - 1 - i] *= gain;            // Fade-out am Ende
+      }
+    }
+
+    return out;
+  }
+
+  // ---------- Preview-Slice: nur ein kurzer Ausschnitt wird für die Vorschau gerendert ----------
+  // Damit "Generate" nicht jedes Mal die komplette Datei durch die Kette schickt (langsam),
+  // wird für die Vorschau nur ein 10s-Ausschnitt aus der Mitte gerendert.
+  // Der volle Export passiert erst beim Klick auf "WAV Export".
+  const PREVIEW_SECONDS = 10;
+  function getPreviewSlice(buffer) {
+    const sr = buffer.sampleRate;
+    const total = buffer.length;
+    const previewLen = Math.min(total, Math.floor(PREVIEW_SECONDS * sr));
+    if (previewLen >= total) return buffer; // Loop ist eh schon kurz genug
+    const start = Math.floor((total - previewLen) / 2);
+    const ctx = getAudioCtx();
+    const slice = ctx.createBuffer(buffer.numberOfChannels, previewLen, sr);
+    for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+      slice.getChannelData(ch).set(buffer.getChannelData(ch).subarray(start, start + previewLen));
+    }
+    return slice;
+  }
+
+  // ---------- Generate button ----------
+  generateBtn.addEventListener('click', async () => {
+    if (!originalBuffer) return;
+    if (selectedEffects.size === 0) {
+      setStatus('Erst Effekte auswählen (Schritt 04) oder Vibe wählen (03)');
+      return;
+    }
+    generateBtn.disabled = true;
+    playBtn.disabled = true;
+    exportBtn.disabled = true;
+    stopPlayback();
+    stopOriginalPlayback();
+    const modeTag = [unstableMode ? 'Unstable' : null, driftMode ? 'Drift' : null].filter(Boolean).join(' + ');
+    setStatus(modeTag ? 'Kette wird gewürfelt … (' + modeTag + ')' : 'Kette wird gewürfelt …');
+    startVuAnim();
+
+    currentChain = randomChain();
+    renderChain(currentChain, true);
+
+    // small delay so animation is visible before heavy processing
+    await new Promise(r => setTimeout(r, PEDAL_DEFS.length * 70 + 150));
+
+    setStatus('Rendere Vorschau …');
+    try {
+      const previewSlice = getPreviewSlice(originalBuffer);
+      const isFullLength = previewSlice === originalBuffer;
+      const ratio = exportBpm / currentBpm;
+      processedBuffer = await renderProcessedBuffer(previewSlice, currentChain, ratio);
+      setStatus(isFullLength ? 'Fertig — bereit zum Abspielen' : 'Vorschau bereit (10s aus der Mitte)');
+      playBtn.disabled = false;
+      exportBtn.disabled = false;
+      drawWaveform(processedBuffer);
+    } catch (err) {
+      console.error(err);
+      setStatus('Fehler beim Rendern');
+    }
+    stopVuAnim(isPlaying);
+    generateBtn.disabled = false;
+  });
+
+  // ---------- Playback ----------
+  function stopPlayback() {
+    if (sourceNode) {
+      try { sourceNode.stop(); } catch(e) {}
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+    isPlaying = false;
+    playBtn.textContent = '▶ Abspielen';
+    stopVuAnim(false);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (!processedBuffer) return;
+    if (isPlaying) {
+      stopPlayback();
+      setStatus('Gestoppt');
+      return;
+    }
+    stopOriginalPlayback();
+    const ctx = getAudioCtx();
+    sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = processedBuffer;
+    sourceNode.connect(ctx.destination);
+    sourceNode.onended = () => {
+      if (isPlaying) {
+        isPlaying = false;
+        playBtn.textContent = '▶ Abspielen';
+        stopVuAnim(false);
+        setStatus('Fertig — bereit zum Abspielen');
+      }
+    };
+    sourceNode.start(0);
+    isPlaying = true;
+    playBtn.textContent = '■ Stop';
+    startVuAnim();
+    setStatus('Spielt ab …');
+  });
+
+  // ---------- WAV Export ----------
+  // Hier erst wird tatsächlich die volle Länge gerendert (die Vorschau war nur der 10s-Ausschnitt).
+  exportBtn.addEventListener('click', async () => {
+    if (!originalBuffer || !processedBuffer) return;
+    exportBtn.disabled = true;
+    generateBtn.disabled = true;
+    modalSpinner.classList.remove('done');
+    modalSpinner.textContent = '';
+    modalText.textContent = 'Bitte warten …';
+    exportModal.classList.add('visible');
+    setStatus('Exportiere volle Länge …');
+    try {
+      const ratio = exportBpm / currentBpm;
+      const fullBuffer = await renderProcessedBuffer(originalBuffer, currentChain, ratio);
+      const wavBlob = bufferToWav(fullBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'spule_loop_' + Date.now() + '.wav';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      modalSpinner.classList.add('done');
+      modalSpinner.textContent = '✓';
+      modalText.textContent = 'Fertig!';
+      setStatus('WAV exportiert ✓');
+    } catch (err) {
+      console.error(err);
+      modalText.textContent = 'Fehler beim Export';
+      setStatus('Fehler beim Export');
+    }
+    setTimeout(() => exportModal.classList.remove('visible'), 1100);
+    exportBtn.disabled = false;
+    generateBtn.disabled = false;
+  });
+
+  function bufferToWav(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const numFrames = buffer.length;
+    const bytesPerSample = 2;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataSize = numFrames * blockAlign;
+    const bufferSize = 44 + dataSize;
+
+    const arrayBuffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(arrayBuffer);
+
+    function writeString(offset, str) {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    }
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bytesPerSample * 8, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    const channelData = [];
+    for (let ch = 0; ch < numChannels; ch++) channelData.push(buffer.getChannelData(ch));
+
+    let offset = 44;
+    for (let i = 0; i < numFrames; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        let sample = Math.max(-1, Math.min(1, channelData[ch][i]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([arrayBuffer], { type: 'audio/wav' });
+  }
+
+  // idle VU shimmer
+  (function idleShimmer() {
+    let t = 0;
+    function tick() {
+      if (!isPlaying && !generateBtn.disabled === false) {
+        // no-op while busy
+      }
+      t += 1;
+      requestAnimationFrame(tick);
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>
