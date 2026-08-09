@@ -584,10 +584,14 @@
       clearTimeout(sizeTimer);
       sizeTimer = setTimeout(()=>buildIR(0.5 + (v/100)*3.5, 3), 180);
     }
+    function setSizeImmediate(v){
+      clearTimeout(sizeTimer);
+      buildIR(0.5 + (v/100)*3.5, 3);
+    }
     function setMix(v){ mixGain.gain.setTargetAtTime(v/100, ctx.currentTime, 0.03); }
-    setSize(50); setMix(50);
+    setSizeImmediate(50); setMix(50);
     return {shell:s, params:[
-      {key:'size',label:'SIZE',min:0,max:100,def:50,onChange:setSize},
+      {key:'size',label:'SIZE',min:0,max:100,def:50,onChange:setSize,onChangeImmediate:setSizeImmediate},
       {key:'mix',label:'MIX',min:0,max:100,def:50,onChange:setMix}
     ]};
   }
@@ -956,7 +960,8 @@
           const liveP = pedals[def.id];
           built.params.forEach(param=>{
             const liveParam = liveP ? liveP.params.find(lp=>lp.key===param.key) : null;
-            param.onChange(liveParam ? liveParam.value : param.def);
+            const apply = param.onChangeImmediate || param.onChange;
+            apply(liveParam ? liveParam.value : param.def);
           });
           const on = liveP ? liveP.enabled : true;
           if(def.bypassMode === 'swap'){
